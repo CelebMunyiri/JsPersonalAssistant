@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #answer {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Personal Assistant</h1>
+    <input type="file" id="pdfFile" accept=".pdf">
+    <button onclick="uploadPDF()">Upload PDF</button>
+    <br><br>
+    <input type="text" id="question" placeholder="Ask a question">
+    <button onclick="askQuestion()">Ask</button>
+    <div id="answer"></div>
+
+    <script>
+       // app.use(express.static('public'));
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a PDF file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+
+            try {
+                const response = await fetch('http://localhost:3000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.text();
+                alert(result);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error uploading PDF');
+            }
+        }
+
+        async function askQuestion() {
+            const questionInput = document.getElementById('question');
+            const question = questionInput.value;
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+        
+            try {
+                const response = await fetch('http://localhost:3000/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question })
+                });
+        
+                const result = await response.json();
+                console.log(result);
+        
+                if (response.ok) {
+                    document.getElementById('answer').innerText = result.answer;
+                } else {
+                    throw new Error(result.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('answer').innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
