@@ -48,7 +48,6 @@ app.post('/upload', upload.single('pdf'), async (req, res) => {
 
 app.post('/ask', async (req, res) => {
     const question = req.body.question;
-    console.log("hit");
     if (!question) {
         return res.status(400).json({ error: 'No question provided.' });
     }
@@ -62,12 +61,36 @@ app.post('/ask', async (req, res) => {
             ],
         });
 
-        res.json({ answer: completion.choices[0].message.content });
+        res.json({ answer: completion.choices[0].message.content, source: 'openai' });
     } catch (error) {
         console.error('Error generating answer:', error);
-        res.status(500).json({ error: 'Error generating answer', details: error.message });
+        
+        // Use fallback method
+        const answer = fallbackAnswer(question);
+        res.json({ answer: answer, source: 'fallback' });
     }
 });
+
+function fallbackAnswer(question) {
+    // Convert question and PDF content to lowercase for case-insensitive matching
+    const lowercaseQuestion = question.toLowerCase();
+    const lowercasePdfContent = pdfContent.toLowerCase();
+
+    // Split the PDF content into sentences
+    const sentences = lowercasePdfContent.split(/[.!?]+/);
+
+    // Find sentences that contain words from the question
+    const relevantSentences = sentences.filter(sentence => 
+        lowercaseQuestion.split(' ').some(word => sentence.includes(word))
+    );
+
+    if (relevantSentences.length > 0) {
+        // Return the most relevant sentence (you could improve this by ranking sentences)
+        return relevantSentences[0].trim();
+    } else {
+        return "I'm sorry, I couldn't find a relevant answer in the provided document.";
+    }
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
